@@ -225,48 +225,18 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 )
             return maxValue
 
-        res = [(action, vMin(gameState.generateSuccessor(0, action), ghostIds[0], 0)) for action in gameState.getLegalActions(0)]
-        # res = [item for item in res if item[1] is not None]
-        res.sort(key=lambda k: k[1])
+        curValue = float('-inf')
+        nextPacmanAction = Directions.STOP
+        legalActions = gameState.getLegalActions(0).copy()
 
-        return res[-1][0]
+        for nextAction in legalActions:
+            nextState = gameState.generateSuccessor(0, nextAction)
+            nextValue = vMin(nextState, 1, 0)
 
+            if nextValue > curValue:
+                curValue, nextPacmanAction = nextValue, nextAction
 
-        # moves = list(map(vMin, gameState.get))
-
-        # return
-
-        # def term(state, depth):
-        #     return state.isWin() or state.isLose() or depth == self.depth
-        #
-        # def vMin(state, depth, ghost):
-        #     if term(state, depth):
-        #         return self.evaluationFunction(state)
-        #
-        #     value = float('-inf')
-        #     for action in state.getLegalActions(ghost):
-        #         if ghost == ghostIds[-1]:
-        #             value = min(value, vMax(state.generateSuccessor(ghost, action), depth + 1))
-        #         else:
-        #             value = min(value, vMin(state.generateSuccessor(ghost, action), depth, ghost + 1))
-        #
-        #     return value
-        #
-        # def vMax(state, depth):
-        #     if term(state, depth):
-        #         return self.evaluationFunction(state)
-        #
-        #     value = float('-inf')
-        #     for action in state.getLegalActions(0):
-        #         value = max(value, vMin(state.generateSuccessor(0, action), depth, ghostIds[0]))
-        #
-        #     return value
-        #
-        # res = [(action, vMin(gameState.generateSuccessor(0, action), 0, ghostIds[0])) \
-        #        for action in gameState.getLegalActions(0)]
-        # res.sort(key=lambda k: k[1])
-        #
-        # return res[-1][0]
+        return nextPacmanAction
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -279,7 +249,68 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+        ghostIds = [i for i in range(1, gameState.getNumAgents())]
+
+        def over(state: GameState, depth: int):
+            return state.isWin() or state.isLose() or depth == self.depth
+
+        def vMin(state, ghostId, depth, alpha, beta):
+            if over(state, depth):
+                # return self.evaluationFunction(state)
+                return scoreEvaluationFunction(state)
+
+            minValue = float('+inf')
+            for action in state.getLegalActions(ghostId):
+                if ghostId != ghostIds[-1]:
+                    minValue = min(
+                        minValue,
+                        vMin(state.generateSuccessor(ghostId, action), ghostId + 1, depth, alpha, beta)
+                    )
+                else:
+                    minValue = min(
+                        minValue,
+                        vMax(state.generateSuccessor(ghostId, action), depth + 1, alpha, beta)
+                    )
+
+                if minValue < alpha:
+                    break
+                beta = min(beta, minValue)
+
+            return minValue
+
+        def vMax(state, depth, alpha, beta):
+            if over(state, depth):
+                # return self.evaluationFunction(state)
+                return scoreEvaluationFunction(state)
+
+            maxValue = float('-inf')
+            for action in state.getLegalActions(0):
+                maxValue = max(
+                    maxValue,
+                    vMin(state.generateSuccessor(0, action), ghostIds[0], depth, alpha, beta)
+                )
+
+                if maxValue > beta:
+                    break
+
+                alpha = max(alpha, maxValue)
+
+            return maxValue
+
+        curValue, alpha, beta = -1e9, -1e9, 1e9
+        nextPacmanAction = Directions.STOP
+        legalActions = gameState.getLegalActions(0).copy()
+
+        for nextAction in legalActions:
+            nextState = gameState.generateSuccessor(0, nextAction)
+            nextValue = vMin(nextState, 1, 0, alpha, beta)
+
+            if nextValue > curValue:
+                curValue, nextPacmanAction = nextValue, nextAction
+
+            alpha = max(alpha, curValue)
+        return nextPacmanAction
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
